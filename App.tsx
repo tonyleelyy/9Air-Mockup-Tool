@@ -8,7 +8,6 @@ const App: React.FC = () => {
   const [selectedShape, setSelectedShape] = useState<ShapeType>(ShapeType.CUBE);
   const [dimensions, setDimensions] = useState<ShapeDimensions>(DEFAULT_DIMENSIONS);
   const [showEnvironment, setShowEnvironment] = useState(false);
-  const [showFloor, setShowFloor] = useState(true);
   const [textures, setTextures] = useState<FaceTextures>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -110,12 +109,10 @@ const App: React.FC = () => {
             selectedShape={selectedShape}
             dimensions={dimensions}
             showEnvironment={showEnvironment}
-            showFloor={showFloor}
             textures={textures}
             onShapeChange={handleShapeChange}
             onDimensionChange={handleDimensionChange}
             onToggleEnvironment={setShowEnvironment}
-            onToggleFloor={setShowFloor}
             onTextureUpload={handleTextureUpload}
             onRemoveTexture={handleRemoveTexture}
             onResetTextures={handleResetTextures}
@@ -154,7 +151,6 @@ const App: React.FC = () => {
           shape={selectedShape}
           dimensions={dimensions}
           showEnvironment={showEnvironment}
-          showFloor={showFloor}
           textures={textures}
           setScreenshotTrigger={(fn) => {
             screenshotRef.current = fn;

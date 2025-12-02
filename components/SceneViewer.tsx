@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, Suspense } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import React, { useRef, useEffect, Suspense, useMemo } from 'react';
+import { Canvas, useThree, useLoader } from '@react-three/fiber';
 import {
   OrbitControls,
   Stage,
@@ -7,6 +7,9 @@ import {
   PerspectiveCamera,
   Environment,
   useTexture,
+  Html,
+  Center,
+  ContactShadows,
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { ShapeType, ShapeDimensions, FaceTextures } from '../types';
@@ -51,8 +54,6 @@ const MATERIAL_PROPS = {
 // A sub-component that actually loads the texture via suspense
 const TextureMaterial: React.FC<{ url: string; attach?: string }> = ({ url, attach }) => {
   const texture = useTexture(url);
-  // Ensure texture wraps correctly if needed, though for single face defaults are usually fine
-  // texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
   return <meshStandardMaterial attach={attach} map={texture} {...MATERIAL_PROPS} color="#ffffff" />;
 };
 
@@ -149,8 +150,32 @@ const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures }
   );
 };
 
-export const SceneViewer: React.FC<SceneViewerProps> = ({ shape, dimensions, showEnvironment, textures, setScreenshotTrigger }) => {
+export const SceneViewer: React.FC<SceneViewerProps> = ({ 
+  shape, 
+  dimensions, 
+  showEnvironment, 
+  textures, 
+  setScreenshotTrigger 
+}) => {
   const shadowBias = -0.001;
+  const scale = 0.1;
+
+  // Calculate the approximate height of the object in scene units to place the shadow plane correctly
+  const objectHeight = useMemo(() => {
+    switch (shape) {
+      case ShapeType.SPHERE:
+        return dimensions.diameter * scale;
+      case ShapeType.CUBE:
+      case ShapeType.BAG:
+        return dimensions.height * scale;
+      default:
+        return 1;
+    }
+  }, [shape, dimensions, scale]);
+
+  // Shadow plane should be at the bottom of the object.
+  // Since <Center> centers the object at (0,0,0), the bottom is at -height/2.
+  const shadowY = -(objectHeight / 2);
 
   return (
     <Canvas
@@ -163,33 +188,43 @@ export const SceneViewer: React.FC<SceneViewerProps> = ({ shape, dimensions, sho
       
       {/* Camera setup */}
       <PerspectiveCamera makeDefault position={[4, 4, 6]} fov={35} />
-      <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.9} />
+      {/* OrbitControls targeting [0,0,0] ensures rotation around the object's center */}
+      <OrbitControls makeDefault target={[0, 0, 0]} minPolarAngle={0} maxPolarAngle={Math.PI / 1.5} />
 
-      {/* Realistic HDRI Environment - Park (Sunny Outdoor) */}
-      <Environment files="https://fastly.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/rooitou_park_1k.hdr" background={showEnvironment} blur={0.6} />
+      {/* Realistic HDRI Environment */}
+      <Environment 
+        files="https://fastly.jsdelivr.net/gh/pmndrs/drei-assets@master/hdri/rooitou_park_1k.hdr"
+        background={showEnvironment} 
+        blur={0.6} 
+      />
       
       <directionalLight
-        position={[8, 12, 5]}
+        position={[5, 10, 5]}
         intensity={2.0}
         castShadow
         shadow-bias={shadowBias}
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
       />
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.5} />
 
-      <Stage
-        intensity={0.1}
-        environment={null}
-        shadows={{ type: 'accumulative', color: '#3a3a3a', opacity: 0.65, alphaTest: 0.8 }}
-        adjustCamera={true}
-      >
+      <Center position={[0, 0, 0]}>
         <Suspense fallback={null}>
           {shape === ShapeType.CUBE && <CubeModel dimensions={dimensions} textures={textures} />}
           {shape === ShapeType.SPHERE && <SphereModel dimensions={dimensions} textures={textures} />}
           {shape === ShapeType.BAG && <BagModel dimensions={dimensions} textures={textures} />}
         </Suspense>
-      </Stage>
+      </Center>
+
+      <ContactShadows 
+        position={[0, shadowY, 0]} 
+        opacity={0.5} 
+        scale={15} 
+        blur={2} 
+        far={2}
+        resolution={512}
+        color="#000000"
+      />
     </Canvas>
   );
 };

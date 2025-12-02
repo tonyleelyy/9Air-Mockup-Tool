@@ -90,16 +90,18 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       {/* Dimensions Input */}
       <section>
         <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
-          Dimensions
+          Dimensions & Config
         </h2>
         <div className="space-y-4">
-          {selectedShape === ShapeType.SPHERE ? (
+          {selectedShape === ShapeType.SPHERE && (
              <NumberInput
              label="Diameter"
              value={dimensions.diameter}
              onChange={(val) => onDimensionChange('diameter', val)}
            />
-          ) : (
+          )}
+
+          {(selectedShape === ShapeType.CUBE || selectedShape === ShapeType.BAG) && (
             <>
               <NumberInput
                 label="Width (W)"
@@ -136,7 +138,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </button>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 grid-cols-2">
           {faces.map((face) => (
             <TextureUploader
               key={face.key}
@@ -154,20 +156,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-3">
           Scene Settings
         </h2>
-        <button
-          onClick={() => onToggleEnvironment(!showEnvironment)}
-          className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-gray-50 transition-all text-gray-700"
-        >
-          <div className="flex items-center gap-3">
-            <ImageIcon size={18} className="text-gray-500" />
-            <span className="text-sm font-medium">Show Environment</span>
-          </div>
-          {showEnvironment ? (
-            <ToggleRight size={24} className="text-indigo-600" />
-          ) : (
-            <ToggleLeft size={24} className="text-gray-400" />
-          )}
-        </button>
+        <div className="space-y-3">
+          <button
+            onClick={() => onToggleEnvironment(!showEnvironment)}
+            className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:border-indigo-300 hover:bg-gray-50 transition-all text-gray-700"
+          >
+            <div className="flex items-center gap-3">
+              <ImageIcon size={18} className="text-gray-500" />
+              <span className="text-sm font-medium">Show Environment</span>
+            </div>
+            {showEnvironment ? (
+              <ToggleRight size={24} className="text-indigo-600" />
+            ) : (
+              <ToggleLeft size={24} className="text-gray-400" />
+            )}
+          </button>
+        </div>
       </section>
       
       <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 text-indigo-800 text-sm">
