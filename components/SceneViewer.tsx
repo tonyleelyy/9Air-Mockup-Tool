@@ -166,7 +166,7 @@ export const SceneViewer: React.FC<SceneViewerProps> = ({ shape, dimensions, sho
       <OrbitControls makeDefault minPolarAngle={0} maxPolarAngle={Math.PI / 1.9} />
 
       {/* Realistic HDRI Environment - Park (Sunny Outdoor) */}
-      <Environment preset="park" background={showEnvironment} blur={0.6} />
+      <Environment files="https://cdn.jsdelivr.net/gh/pmndrs/drei-assets@456060a26bbeb8fdf79326f224b6d99b8bcce736/hdri/park.hdr" background={showEnvironment} blur={0.6} />
       
       <directionalLight
         position={[8, 12, 5]}
