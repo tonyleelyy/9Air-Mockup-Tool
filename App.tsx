@@ -2,21 +2,33 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { SceneViewer } from './components/SceneViewer';
 import { ControlPanel } from './components/ControlPanel';
 import { ShapeType, ShapeDimensions, DEFAULT_DIMENSIONS, FaceTextures } from './types';
-import { Download } from 'lucide-react';
+import { Download, Maximize, Minimize } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedShape, setSelectedShape] = useState<ShapeType>(ShapeType.CUBE);
   const [dimensions, setDimensions] = useState<ShapeDimensions>(DEFAULT_DIMENSIONS);
   const [showEnvironment, setShowEnvironment] = useState(false);
+  const [showFloor, setShowFloor] = useState(true);
   const [textures, setTextures] = useState<FaceTextures>({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // We use a ref to trigger the screenshot function inside the Canvas component
   const screenshotRef = useRef<(() => void) | null>(null);
+  const sceneContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset textures when shape changes
   useEffect(() => {
     setTextures({});
   }, [selectedShape]);
+
+  // Listen for fullscreen changes to update state (e.g. if user presses Esc)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const handleShapeChange = (shape: ShapeType) => {
     setSelectedShape(shape);
@@ -69,6 +81,18 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const toggleFullscreen = () => {
+    if (!sceneContainerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      sceneContainerRef.current.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen flex-col md:flex-row bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* Left Sidebar: Controls */}
@@ -86,10 +110,12 @@ const App: React.FC = () => {
             selectedShape={selectedShape}
             dimensions={dimensions}
             showEnvironment={showEnvironment}
+            showFloor={showFloor}
             textures={textures}
             onShapeChange={handleShapeChange}
             onDimensionChange={handleDimensionChange}
             onToggleEnvironment={setShowEnvironment}
+            onToggleFloor={setShowFloor}
             onTextureUpload={handleTextureUpload}
             onRemoveTexture={handleRemoveTexture}
             onResetTextures={handleResetTextures}
@@ -108,15 +134,27 @@ const App: React.FC = () => {
       </div>
 
       {/* Right Area: 3D Scene */}
-      <div className="flex-1 relative bg-gray-100 h-[60vh] md:h-full">
+      <div 
+        ref={sceneContainerRef}
+        className="flex-1 relative bg-gray-100 h-[60vh] md:h-full group"
+      >
         <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 pointer-events-none border border-white/50">
           Left Click: Rotate &bull; Right Click: Pan &bull; Scroll: Zoom
         </div>
+
+        <button
+          onClick={toggleFullscreen}
+          className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full text-gray-600 hover:text-indigo-600 hover:bg-white transition-all shadow-sm border border-white/50 focus:outline-none"
+          title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+        >
+          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+        </button>
         
         <SceneViewer
           shape={selectedShape}
           dimensions={dimensions}
           showEnvironment={showEnvironment}
+          showFloor={showFloor}
           textures={textures}
           setScreenshotTrigger={(fn) => {
             screenshotRef.current = fn;
