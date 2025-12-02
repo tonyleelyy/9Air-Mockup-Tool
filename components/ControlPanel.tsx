@@ -173,11 +173,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           </button>
         </div>
       </section>
-      
-      <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 text-indigo-800 text-sm">
-        <p className="font-medium mb-1">Tip:</p>
-        Toggle the environment off for a transparent background screenshot, perfect for Figma or Photoshop.
-      </div>
     </div>
   );
 };

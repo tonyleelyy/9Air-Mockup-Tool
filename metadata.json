@@ -1,5 +1,5 @@
 {
-  "name": "3D Mockup Generator",
+  "name": "9Air Mockup Tool",
   "description": "A minimalist 3D tool to generate untextured product mockups (Cube, Sphere, Bag) based on custom dimensions for design use.",
   "requestFramePermissions": []
 }

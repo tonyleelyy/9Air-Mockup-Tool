@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { SceneViewer } from './components/SceneViewer';
 import { ControlPanel } from './components/ControlPanel';
 import { ShapeType, ShapeDimensions, DEFAULT_DIMENSIONS, FaceTextures } from './types';
-import { Download, Maximize, Minimize } from 'lucide-react';
+import { Download, Maximize, Minimize, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedShape, setSelectedShape] = useState<ShapeType>(ShapeType.CUBE);
@@ -10,6 +10,7 @@ const App: React.FC = () => {
   const [showEnvironment, setShowEnvironment] = useState(false);
   const [textures, setTextures] = useState<FaceTextures>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   
   // We use a ref to trigger the screenshot function inside the Canvas component
   const screenshotRef = useRef<(() => void) | null>(null);
@@ -95,13 +96,26 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen w-screen flex-col md:flex-row bg-gray-50 text-gray-900 font-sans overflow-hidden">
       {/* Left Sidebar: Controls */}
-      <div className="w-full md:w-80 flex-shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-200 z-10 flex flex-col h-auto md:h-full shadow-lg">
-        <div className="p-6 border-b border-gray-100">
-          <h1 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
-            <span className="w-6 h-6 bg-indigo-600 rounded-md block"></span>
-            3D Mockup Tool
-          </h1>
-          <p className="text-xs text-gray-500 mt-1">Generate blank product bases</p>
+      <div 
+        className={`${
+          isSidebarOpen ? 'w-full md:w-80 opacity-100' : 'w-0 opacity-0 md:w-0'
+        } flex-shrink-0 bg-white border-b md:border-b-0 md:border-r border-gray-200 z-10 flex flex-col h-auto md:h-full shadow-lg transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap`}
+      >
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
+              <span className="w-6 h-6 bg-indigo-600 rounded-md block"></span>
+              9Air Mockup Tool
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">请横屏使用</p>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="text-gray-400 hover:text-indigo-600 transition-colors p-1 rounded-md hover:bg-gray-50"
+            title="Collapse Sidebar"
+          >
+            <PanelLeftClose size={20} />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -135,7 +149,19 @@ const App: React.FC = () => {
         ref={sceneContainerRef}
         className="flex-1 relative bg-gray-100 h-[60vh] md:h-full group"
       >
-        <div className="absolute top-4 left-4 z-10 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium text-gray-500 pointer-events-none border border-white/50">
+        {/* Expand Sidebar Button (only visible when sidebar is closed) */}
+        {!isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-4 left-4 z-20 bg-white/80 backdrop-blur-sm p-2 rounded-lg text-gray-600 hover:text-indigo-600 hover:bg-white transition-all shadow-sm border border-white/50 focus:outline-none"
+            title="Expand Sidebar"
+          >
+            <PanelLeftOpen size={20} />
+          </button>
+        )}
+
+        {/* Instructions */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 bg-white/60 backdrop-blur-sm px-4 py-1.5 rounded-full text-xs font-medium text-gray-500 pointer-events-none border border-white/50 shadow-sm">
           Left Click: Rotate &bull; Right Click: Pan &bull; Scroll: Zoom
         </div>
 
