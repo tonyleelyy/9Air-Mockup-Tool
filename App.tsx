@@ -4,6 +4,16 @@ import { ControlPanel } from './components/ControlPanel';
 import { ShapeType, ShapeDimensions, DEFAULT_DIMENSIONS, FaceTextures } from './types';
 import { Download, Maximize, Minimize, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
+// Helper to get image dimensions
+const getImageDimensions = (url: string): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.width, height: img.height });
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    img.src = url;
+  });
+};
+
 const App: React.FC = () => {
   const [selectedShape, setSelectedShape] = useState<ShapeType>(ShapeType.CUBE);
   const [dimensions, setDimensions] = useState<ShapeDimensions>(DEFAULT_DIMENSIONS);
@@ -35,32 +45,47 @@ const App: React.FC = () => {
         { key: 'map', filename: 'Map.png' },
       ];
 
-      const checkImageExists = (url: string): Promise<boolean> => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
-          img.src = url;
-        });
-      };
-
       const loadTextures = async () => {
         const newTextures: FaceTextures = {};
+        let frontRatio: number | null = null;
+        let sideRatio: number | null = null;
         
         await Promise.all(potentialTextures.map(async ({ key, filename }) => {
           const url = `${baseUrl}/${filename}`;
-          // Use Image loading to verify existence, which is more robust than fetch HEAD for assets
-          const exists = await checkImageExists(url);
-          if (exists) {
+          try {
+            // Verify existence and get dimensions simultaneously
+            const dims = await getImageDimensions(url);
             newTextures[key] = url;
-          } else {
-            // Optional: Log missing textures for debugging
-            // console.warn(`Texture not found: ${url}`);
+
+            const ratio = dims.width / dims.height;
+            
+            // Prioritize Front for Width calculation, then Back
+            if (key === 'front') frontRatio = ratio;
+            if (key === 'back' && frontRatio === null) frontRatio = ratio;
+
+            // Prioritize Left for Depth calculation, then Right
+            if (key === 'left') sideRatio = ratio;
+            if (key === 'right' && sideRatio === null) sideRatio = ratio;
+
+          } catch (error) {
+            // Image doesn't exist or failed to load
           }
         }));
 
         if (Object.keys(newTextures).length > 0) {
           setTextures((prev) => ({ ...prev, ...newTextures }));
+
+          // Update dimensions based on loaded textures (preserving current Height)
+          setDimensions((prev) => {
+            const next = { ...prev };
+            if (frontRatio) {
+              next.width = parseFloat((next.height * frontRatio).toFixed(2));
+            }
+            if (sideRatio) {
+              next.depth = parseFloat((next.height * sideRatio).toFixed(2));
+            }
+            return next;
+          });
         }
       };
 
@@ -88,8 +113,30 @@ const App: React.FC = () => {
     }));
   };
 
-  const handleTextureUpload = (face: string, file: File) => {
+  const handleTextureUpload = async (face: string, file: File) => {
     const url = URL.createObjectURL(file);
+
+    // Auto-calculate dimensions based on texture aspect ratio
+    try {
+      const { width, height } = await getImageDimensions(url);
+      const ratio = width / height;
+
+      setDimensions((prev) => {
+        const next = { ...prev };
+        // For Front/Back, adjust Width based on current Height
+        if (face === 'front' || face === 'back') {
+          next.width = parseFloat((next.height * ratio).toFixed(2));
+        } 
+        // For Left/Right, adjust Depth based on current Height
+        else if (face === 'left' || face === 'right') {
+          next.depth = parseFloat((next.height * ratio).toFixed(2));
+        }
+        return next;
+      });
+    } catch (err) {
+      console.warn("Could not calculate dimensions from uploaded image");
+    }
+
     setTextures((prev) => {
       // Revoke old url if exists to avoid memory leaks
       if (prev[face]) {
