@@ -45,6 +45,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
           { key: 'back', label: 'Back' },
           { key: 'left', label: 'Side Left' },
           { key: 'right', label: 'Side Right' },
+          { key: 'top', label: 'Top' },
           { key: 'bottom', label: 'Bottom' },
         ];
       case ShapeType.SPHERE:

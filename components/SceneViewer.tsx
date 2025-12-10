@@ -98,7 +98,6 @@ const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; 
   const w = dimensions.width * scale;
   const h = dimensions.height * scale;
   const d = dimensions.depth * scale;
-  const matProps = getMaterialProps(showEnvironment);
   
   // Custom Bag Geometry Construction
   // Bag Body is a Box. Same mapping as Cube.
@@ -111,7 +110,7 @@ const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; 
         <FaceMaterial attach="material-0" url={textures['right']} showEnvironment={showEnvironment} />
         <FaceMaterial attach="material-1" url={textures['left']} showEnvironment={showEnvironment} />
         {/* Top is usually open or white for a bag, but we allow texturing if user wants, or fallback to white */}
-        <FaceMaterial attach="material-2" url={null} showEnvironment={showEnvironment} /> 
+        <FaceMaterial attach="material-2" url={textures['top']} showEnvironment={showEnvironment} /> 
         <FaceMaterial attach="material-3" url={textures['bottom']} showEnvironment={showEnvironment} />
         <FaceMaterial attach="material-4" url={textures['front']} showEnvironment={showEnvironment} />
         <FaceMaterial attach="material-5" url={textures['back']} showEnvironment={showEnvironment} />
@@ -135,7 +134,7 @@ const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; 
         {/* Handle 2 */}
         <mesh position={[0, 0.15, -d * 0.25]} rotation={[0, 0, 0]}>
           <torusGeometry args={[w * 0.15, 0.02, 16, 32, Math.PI]} />
-           <meshStandardMaterial color="#eeeeee" roughness={0.5} />
+          <meshStandardMaterial color="#eeeeee" roughness={0.5} />
         </mesh>
          <mesh position={[-w * 0.15, 0.08, -d * 0.25]}>
            <cylinderGeometry args={[0.02, 0.02, 0.16]} />
