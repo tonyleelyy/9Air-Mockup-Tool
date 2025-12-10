@@ -16,10 +16,49 @@ const App: React.FC = () => {
   const screenshotRef = useRef<(() => void) | null>(null);
   const sceneContainerRef = useRef<HTMLDivElement>(null);
 
-  // Reset textures when shape changes
+  // Auto-load textures from URL query param "dir"
   useEffect(() => {
-    setTextures({});
-  }, [selectedShape]);
+    const params = new URLSearchParams(window.location.search);
+    const dir = params.get('dir');
+
+    if (dir) {
+      const baseUrl = `https://fastly.jsdelivr.net/gh/tonyleelyy/9Air-Mockup-Tool@main/Projects/${dir}`;
+      
+      // Define mapping of keys to expected filenames
+      const potentialTextures = [
+        { key: 'front', filename: 'Front.png' },
+        { key: 'back', filename: 'Back.png' },
+        { key: 'left', filename: 'Left.png' },
+        { key: 'right', filename: 'Right.png' },
+        { key: 'top', filename: 'Top.png' },
+        { key: 'bottom', filename: 'Bottom.png' },
+        { key: 'map', filename: 'Map.png' },
+      ];
+
+      const loadTextures = async () => {
+        const newTextures: FaceTextures = {};
+        
+        await Promise.all(potentialTextures.map(async ({ key, filename }) => {
+          const url = `${baseUrl}/${filename}`;
+          try {
+            // Check if file exists using HEAD request
+            const response = await fetch(url, { method: 'HEAD' });
+            if (response.ok) {
+              newTextures[key] = url;
+            }
+          } catch (error) {
+            console.warn(`Failed to verify texture: ${url}`, error);
+          }
+        }));
+
+        if (Object.keys(newTextures).length > 0) {
+          setTextures((prev) => ({ ...prev, ...newTextures }));
+        }
+      };
+
+      loadTextures();
+    }
+  }, []);
 
   // Listen for fullscreen changes to update state (e.g. if user presses Esc)
   useEffect(() => {

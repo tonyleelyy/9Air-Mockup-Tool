@@ -2,7 +2,6 @@ import React, { useRef, useEffect, Suspense, useMemo } from 'react';
 import { Canvas, useThree, useLoader } from '@react-three/fiber';
 import {
   OrbitControls,
-  Stage,
   Sphere,
   PerspectiveCamera,
   Environment,
@@ -45,28 +44,28 @@ const ScreenshotHandler: React.FC<{ setScreenshotTrigger: (fn: () => void) => vo
 
 // --- Helper Components for Materials ---
 
-const MATERIAL_PROPS = {
+const getMaterialProps = (showEnvironment: boolean) => ({
   color: '#ffffff',
-  roughness: 0.2,
-  metalness: 0.1,
-};
+  roughness: showEnvironment ? 0.2 : 1.0,
+  metalness: showEnvironment ? 0.1 : 0.0,
+});
 
 // A sub-component that actually loads the texture via suspense
-const TextureMaterial: React.FC<{ url: string; attach?: string }> = ({ url, attach }) => {
+const TextureMaterial: React.FC<{ url: string; attach?: string; showEnvironment: boolean }> = ({ url, attach, showEnvironment }) => {
   const texture = useTexture(url);
-  return <meshStandardMaterial attach={attach} map={texture} {...MATERIAL_PROPS} color="#ffffff" />;
+  return <meshStandardMaterial attach={attach} map={texture} {...getMaterialProps(showEnvironment)} />;
 };
 
-const FaceMaterial: React.FC<{ url?: string | null; attach?: string }> = ({ url, attach }) => {
+const FaceMaterial: React.FC<{ url?: string | null; attach?: string; showEnvironment: boolean }> = ({ url, attach, showEnvironment }) => {
   if (url) {
-    return <TextureMaterial url={url} attach={attach} />;
+    return <TextureMaterial url={url} attach={attach} showEnvironment={showEnvironment} />;
   }
-  return <meshStandardMaterial attach={attach} {...MATERIAL_PROPS} />;
+  return <meshStandardMaterial attach={attach} {...getMaterialProps(showEnvironment)} />;
 };
 
 // --- Shape Components ---
 
-const CubeModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures }> = ({ dimensions, textures }) => {
+const CubeModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; showEnvironment: boolean }> = ({ dimensions, textures, showEnvironment }) => {
   const scale = 0.1;
   // BoxGeometry material index order:
   // 0: right (px), 1: left (nx), 2: top (py), 3: bottom (ny), 4: front (pz), 5: back (nz)
@@ -74,31 +73,32 @@ const CubeModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures 
   return (
     <mesh>
       <boxGeometry args={[dimensions.width * scale, dimensions.height * scale, dimensions.depth * scale]} />
-      <FaceMaterial attach="material-0" url={textures['right']} />
-      <FaceMaterial attach="material-1" url={textures['left']} />
-      <FaceMaterial attach="material-2" url={textures['top']} />
-      <FaceMaterial attach="material-3" url={textures['bottom']} />
-      <FaceMaterial attach="material-4" url={textures['front']} />
-      <FaceMaterial attach="material-5" url={textures['back']} />
+      <FaceMaterial attach="material-0" url={textures['right']} showEnvironment={showEnvironment} />
+      <FaceMaterial attach="material-1" url={textures['left']} showEnvironment={showEnvironment} />
+      <FaceMaterial attach="material-2" url={textures['top']} showEnvironment={showEnvironment} />
+      <FaceMaterial attach="material-3" url={textures['bottom']} showEnvironment={showEnvironment} />
+      <FaceMaterial attach="material-4" url={textures['front']} showEnvironment={showEnvironment} />
+      <FaceMaterial attach="material-5" url={textures['back']} showEnvironment={showEnvironment} />
     </mesh>
   );
 };
 
-const SphereModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures }> = ({ dimensions, textures }) => {
+const SphereModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; showEnvironment: boolean }> = ({ dimensions, textures, showEnvironment }) => {
   const scale = 0.1;
   const radius = (dimensions.diameter / 2) * scale;
   return (
     <Sphere args={[radius, 64, 64]}>
-      <FaceMaterial url={textures['map']} />
+      <FaceMaterial url={textures['map']} showEnvironment={showEnvironment} />
     </Sphere>
   );
 };
 
-const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures }> = ({ dimensions, textures }) => {
+const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures; showEnvironment: boolean }> = ({ dimensions, textures, showEnvironment }) => {
   const scale = 0.1;
   const w = dimensions.width * scale;
   const h = dimensions.height * scale;
   const d = dimensions.depth * scale;
+  const matProps = getMaterialProps(showEnvironment);
   
   // Custom Bag Geometry Construction
   // Bag Body is a Box. Same mapping as Cube.
@@ -108,13 +108,13 @@ const BagModel: React.FC<{ dimensions: ShapeDimensions; textures: FaceTextures }
       {/* Bag Body - Sharp Edges */}
       <mesh position={[0, 0, 0]}>
         <boxGeometry args={[w, h, d]} />
-        <FaceMaterial attach="material-0" url={textures['right']} />
-        <FaceMaterial attach="material-1" url={textures['left']} />
+        <FaceMaterial attach="material-0" url={textures['right']} showEnvironment={showEnvironment} />
+        <FaceMaterial attach="material-1" url={textures['left']} showEnvironment={showEnvironment} />
         {/* Top is usually open or white for a bag, but we allow texturing if user wants, or fallback to white */}
-        <FaceMaterial attach="material-2" url={null} /> 
-        <FaceMaterial attach="material-3" url={textures['bottom']} />
-        <FaceMaterial attach="material-4" url={textures['front']} />
-        <FaceMaterial attach="material-5" url={textures['back']} />
+        <FaceMaterial attach="material-2" url={null} showEnvironment={showEnvironment} /> 
+        <FaceMaterial attach="material-3" url={textures['bottom']} showEnvironment={showEnvironment} />
+        <FaceMaterial attach="material-4" url={textures['front']} showEnvironment={showEnvironment} />
+        <FaceMaterial attach="material-5" url={textures['back']} showEnvironment={showEnvironment} />
       </mesh>
 
       {/* Handles */}
@@ -210,9 +210,9 @@ export const SceneViewer: React.FC<SceneViewerProps> = ({
 
       <Center position={[0, 0, 0]}>
         <Suspense fallback={null}>
-          {shape === ShapeType.CUBE && <CubeModel dimensions={dimensions} textures={textures} />}
-          {shape === ShapeType.SPHERE && <SphereModel dimensions={dimensions} textures={textures} />}
-          {shape === ShapeType.BAG && <BagModel dimensions={dimensions} textures={textures} />}
+          {shape === ShapeType.CUBE && <CubeModel dimensions={dimensions} textures={textures} showEnvironment={showEnvironment} />}
+          {shape === ShapeType.SPHERE && <SphereModel dimensions={dimensions} textures={textures} showEnvironment={showEnvironment} />}
+          {shape === ShapeType.BAG && <BagModel dimensions={dimensions} textures={textures} showEnvironment={showEnvironment} />}
         </Suspense>
       </Center>
 
