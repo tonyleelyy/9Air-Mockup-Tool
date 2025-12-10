@@ -35,19 +35,27 @@ const App: React.FC = () => {
         { key: 'map', filename: 'Map.png' },
       ];
 
+      const checkImageExists = (url: string): Promise<boolean> => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
+        });
+      };
+
       const loadTextures = async () => {
         const newTextures: FaceTextures = {};
         
         await Promise.all(potentialTextures.map(async ({ key, filename }) => {
           const url = `${baseUrl}/${filename}`;
-          try {
-            // Check if file exists using HEAD request
-            const response = await fetch(url, { method: 'HEAD' });
-            if (response.ok) {
-              newTextures[key] = url;
-            }
-          } catch (error) {
-            console.warn(`Failed to verify texture: ${url}`, error);
+          // Use Image loading to verify existence, which is more robust than fetch HEAD for assets
+          const exists = await checkImageExists(url);
+          if (exists) {
+            newTextures[key] = url;
+          } else {
+            // Optional: Log missing textures for debugging
+            // console.warn(`Texture not found: ${url}`);
           }
         }));
 
